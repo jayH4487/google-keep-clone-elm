@@ -33,7 +33,11 @@ subscriptions _ =
 
 
 type alias Note =
-    { id : Int, title : String, text : String, color : String }
+    { id : Int
+    , title : String
+    , text : String
+    , color : String
+    }
 
 
 type alias Model =
@@ -60,21 +64,37 @@ init _ =
 
 
 type Msg
-    = OpenCloseForm String
+    = Open
+    | Close
+    | OpenCloseForm Bool
     | Title String
     | Text String
-    | Submit
+    | AddNote
+    | CloseAndAddNote
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        OpenCloseForm str ->
-            -- let
-            --     _ =
-            --         Debug.log "parentNode" str
-            -- in
-            ( { model | isFormOpen = str == "form" }, Cmd.none )
+        OpenCloseForm bool ->
+            let
+                _ =
+                    Debug.log "clicked" bool
+
+                newNotes =
+                    if model.title == "" && model.title == "" then
+                        model.notes
+
+                    else
+                        model.notes ++ [ { id = 0, title = model.title, text = model.text, color = "white" } ]
+            in
+            ( { model | isFormOpen = bool, notes = newNotes, title = "", text = "" }, Cmd.none )
+
+        Open ->
+            ( { model | isFormOpen = True }, Cmd.none )
+
+        Close ->
+            ( { model | isFormOpen = False }, Cmd.none )
 
         Title value ->
             ( { model | title = value }, Cmd.none )
@@ -82,12 +102,27 @@ update msg model =
         Text value ->
             ( { model | text = value }, Cmd.none )
 
-        Submit ->
-            let
-                newNote =
-                    { id = 0, title = model.title, text = model.text, color = "white" }
-            in
-            ( { model | notes = model.notes ++ [ newNote ], title = "", text = "" }, Cmd.none )
+        AddNote ->
+            if model.title /= "" || model.text /= "" then
+                let
+                    newNotes =
+                        model.notes ++ [ { id = 0, title = model.title, text = model.text, color = "white" } ]
+                in
+                ( { model | notes = newNotes, title = "", text = "", isFormOpen = False }, Cmd.none )
+
+            else
+                ( model, Cmd.none )
+
+        CloseAndAddNote ->
+            if model.title /= "" || model.text /= "" then
+                let
+                    newNotes =
+                        model.notes ++ [ { id = 0, title = model.title, text = model.text, color = "white" } ]
+                in
+                ( { model | notes = newNotes, title = "", text = "", isFormOpen = False }, Cmd.none )
+
+            else
+                ( { model | isFormOpen = False }, Cmd.none )
 
 
 
@@ -96,7 +131,7 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    main_ [ onCustomClick OpenCloseForm ]
+    main_ [ onCustomClick ]
         [ viewHeader
         , viewFormContainer model
         , div []
@@ -175,11 +210,16 @@ viewFormContainer model =
                 ]
                 [ button
                     [ type_ "button"
-                    , id "submit-button"
-                    , onClick Submit
+                    , id "add-button"
+                    , onStopPropClick AddNote
                     ]
-                    [ text "Submit" ]
-                , button [ type_ "button", id "form-close-button" ] [ text "Close" ]
+                    [ text "Add" ]
+                , button
+                    [ type_ "button"
+                    , id "form-close-button"
+                    , onStopPropClick Close
+                    ]
+                    [ text "Close" ]
                 ]
             ]
         ]
@@ -213,11 +253,66 @@ viewNote note =
         ]
 
 
-onCustomClick : (String -> msg) -> Attribute msg
-onCustomClick tagger =
-    on "click" (Decode.map tagger targetDecoder)
+onCustomClick : Attribute Msg
+onCustomClick =
+    on "click" targetDecoder
 
 
-targetDecoder : Decode.Decoder String
+targetDecoder : Decode.Decoder Msg
 targetDecoder =
-    Decode.field "target" (Decode.field "parentNode" (Decode.field "id" Decode.string))
+    Decode.at [ "target" ] isOutsideForm
+        |> Decode.andThen
+            (\isOutside ->
+                if isOutside then
+                    Decode.succeed CloseAndAddNote
+
+                else
+                    Decode.succeed Open
+            )
+
+
+isOutsideForm : Decode.Decoder Bool
+isOutsideForm =
+    Decode.oneOf
+        [ Decode.field "id" Decode.string
+            |> Decode.andThen
+                (\id ->
+                    if id == "form" then
+                        Decode.succeed False
+
+                    else
+                        Decode.fail ""
+                )
+        , Decode.lazy (\_ -> isOutsideForm |> Decode.field "parentNode")
+        , Decode.succeed True
+        ]
+
+
+onStopPropClick : Msg -> Attribute Msg
+onStopPropClick message =
+    stopPropagationOn "click" (Decode.map alwaysStop (Decode.succeed message))
+
+
+alwaysStop : a -> ( a, Bool )
+alwaysStop x =
+    ( x, True )
+
+
+
+-- checkParentNode : String -> Decode.Decoder Msg
+-- checkParentNode id =
+--     case id of
+--         "note-title" ->
+--             let
+--                 _ =
+--                     Debug.log "clicked" id
+--             in
+--             Decode.succeed Open
+--         "form-buttons" ->
+--             Decode.succeed Open
+--         _ ->
+--             let
+--                 _ =
+--                     Debug.log "clicked" id
+--             in
+--             Decode.succeed Open

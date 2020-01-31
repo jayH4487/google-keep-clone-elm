@@ -5156,15 +5156,36 @@ var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
 var $author$project$Main$subscriptions = function (_v0) {
 	return $elm$core$Platform$Sub$none;
 };
+var $elm$core$Debug$log = _Debug_log;
+var $elm$core$Basics$neq = _Utils_notEqual;
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
 			case 'OpenCloseForm':
-				var str = msg.a;
+				var bool = msg.a;
+				var newNotes = ((model.title === '') && (model.title === '')) ? model.notes : _Utils_ap(
+					model.notes,
+					_List_fromArray(
+						[
+							{color: 'white', id: 0, text: model.text, title: model.title}
+						]));
+				var _v1 = A2($elm$core$Debug$log, 'clicked', bool);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{isFormOpen: str === 'form'}),
+						{isFormOpen: bool, notes: newNotes, text: '', title: ''}),
+					$elm$core$Platform$Cmd$none);
+			case 'Open':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{isFormOpen: true}),
+					$elm$core$Platform$Cmd$none);
+			case 'Close':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{isFormOpen: false}),
 					$elm$core$Platform$Cmd$none);
 			case 'Title':
 				var value = msg.a;
@@ -5180,25 +5201,44 @@ var $author$project$Main$update = F2(
 						model,
 						{text: value}),
 					$elm$core$Platform$Cmd$none);
+			case 'AddNote':
+				if ((model.title !== '') || (model.text !== '')) {
+					var newNotes = _Utils_ap(
+						model.notes,
+						_List_fromArray(
+							[
+								{color: 'white', id: 0, text: model.text, title: model.title}
+							]));
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{isFormOpen: false, notes: newNotes, text: '', title: ''}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				}
 			default:
-				var newNote = {color: 'white', id: 0, text: model.text, title: model.title};
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							notes: _Utils_ap(
-								model.notes,
-								_List_fromArray(
-									[newNote])),
-							text: '',
-							title: ''
-						}),
-					$elm$core$Platform$Cmd$none);
+				if ((model.title !== '') || (model.text !== '')) {
+					var newNotes = _Utils_ap(
+						model.notes,
+						_List_fromArray(
+							[
+								{color: 'white', id: 0, text: model.text, title: model.title}
+							]));
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{isFormOpen: false, notes: newNotes, text: '', title: ''}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{isFormOpen: false}),
+						$elm$core$Platform$Cmd$none);
+				}
 		}
 	});
-var $author$project$Main$OpenCloseForm = function (a) {
-	return {$: 'OpenCloseForm', a: a};
-};
 var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$html$Html$main_ = _VirtualDom_node('main');
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
@@ -5212,22 +5252,63 @@ var $elm$html$Html$Events$on = F2(
 			event,
 			$elm$virtual_dom$VirtualDom$Normal(decoder));
 	});
+var $author$project$Main$CloseAndAddNote = {$: 'CloseAndAddNote'};
+var $author$project$Main$Open = {$: 'Open'};
+var $elm$json$Json$Decode$andThen = _Json_andThen;
 var $elm$json$Json$Decode$field = _Json_decodeField;
-var $elm$json$Json$Decode$string = _Json_decodeString;
-var $author$project$Main$targetDecoder = A2(
-	$elm$json$Json$Decode$field,
-	'target',
-	A2(
-		$elm$json$Json$Decode$field,
-		'parentNode',
-		A2($elm$json$Json$Decode$field, 'id', $elm$json$Json$Decode$string)));
-var $author$project$Main$onCustomClick = function (tagger) {
+var $elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
+	});
+var $elm$json$Json$Decode$fail = _Json_fail;
+var $elm$json$Json$Decode$lazy = function (thunk) {
 	return A2(
-		$elm$html$Html$Events$on,
-		'click',
-		A2($elm$json$Json$Decode$map, tagger, $author$project$Main$targetDecoder));
+		$elm$json$Json$Decode$andThen,
+		thunk,
+		$elm$json$Json$Decode$succeed(_Utils_Tuple0));
 };
-var $author$project$Main$Submit = {$: 'Submit'};
+var $elm$json$Json$Decode$oneOf = _Json_oneOf;
+var $elm$json$Json$Decode$string = _Json_decodeString;
+function $author$project$Main$cyclic$isOutsideForm() {
+	return $elm$json$Json$Decode$oneOf(
+		_List_fromArray(
+			[
+				A2(
+				$elm$json$Json$Decode$andThen,
+				function (id) {
+					return (id === 'form') ? $elm$json$Json$Decode$succeed(false) : $elm$json$Json$Decode$fail('');
+				},
+				A2($elm$json$Json$Decode$field, 'id', $elm$json$Json$Decode$string)),
+				$elm$json$Json$Decode$lazy(
+				function (_v0) {
+					return A2(
+						$elm$json$Json$Decode$field,
+						'parentNode',
+						$author$project$Main$cyclic$isOutsideForm());
+				}),
+				$elm$json$Json$Decode$succeed(true)
+			]));
+}
+try {
+	var $author$project$Main$isOutsideForm = $author$project$Main$cyclic$isOutsideForm();
+	$author$project$Main$cyclic$isOutsideForm = function () {
+		return $author$project$Main$isOutsideForm;
+	};
+} catch ($) {
+	throw 'Some top-level definitions from `Main` are causing infinite recursion:\n\n  ┌─────┐\n  │    isOutsideForm\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
+var $author$project$Main$targetDecoder = A2(
+	$elm$json$Json$Decode$andThen,
+	function (isOutside) {
+		return isOutside ? $elm$json$Json$Decode$succeed($author$project$Main$CloseAndAddNote) : $elm$json$Json$Decode$succeed($author$project$Main$Open);
+	},
+	A2(
+		$elm$json$Json$Decode$at,
+		_List_fromArray(
+			['target']),
+		$author$project$Main$isOutsideForm));
+var $author$project$Main$onCustomClick = A2($elm$html$Html$Events$on, 'click', $author$project$Main$targetDecoder);
+var $author$project$Main$AddNote = {$: 'AddNote'};
+var $author$project$Main$Close = {$: 'Close'};
 var $author$project$Main$Text = function (a) {
 	return {$: 'Text', a: a};
 };
@@ -5253,12 +5334,6 @@ var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('
 var $elm$html$Html$form = _VirtualDom_node('form');
 var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
 var $elm$html$Html$input = _VirtualDom_node('input');
-var $elm$html$Html$Events$onClick = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'click',
-		$elm$json$Json$Decode$succeed(msg));
-};
 var $elm$html$Html$Events$alwaysStop = function (x) {
 	return _Utils_Tuple2(x, true);
 };
@@ -5271,10 +5346,6 @@ var $elm$html$Html$Events$stopPropagationOn = F2(
 			$elm$virtual_dom$VirtualDom$on,
 			event,
 			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
-	});
-var $elm$json$Json$Decode$at = F2(
-	function (fields, decoder) {
-		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
 	});
 var $elm$html$Html$Events$targetValue = A2(
 	$elm$json$Json$Decode$at,
@@ -5289,6 +5360,18 @@ var $elm$html$Html$Events$onInput = function (tagger) {
 			$elm$json$Json$Decode$map,
 			$elm$html$Html$Events$alwaysStop,
 			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
+};
+var $author$project$Main$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var $author$project$Main$onStopPropClick = function (message) {
+	return A2(
+		$elm$html$Html$Events$stopPropagationOn,
+		'click',
+		A2(
+			$elm$json$Json$Decode$map,
+			$author$project$Main$alwaysStop,
+			$elm$json$Json$Decode$succeed(message)));
 };
 var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
 var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
@@ -5360,19 +5443,20 @@ var $author$project$Main$viewFormContainer = function (model) {
 								_List_fromArray(
 									[
 										$elm$html$Html$Attributes$type_('button'),
-										$elm$html$Html$Attributes$id('submit-button'),
-										$elm$html$Html$Events$onClick($author$project$Main$Submit)
+										$elm$html$Html$Attributes$id('add-button'),
+										$author$project$Main$onStopPropClick($author$project$Main$AddNote)
 									]),
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Submit')
+										$elm$html$Html$text('Add')
 									])),
 								A2(
 								$elm$html$Html$button,
 								_List_fromArray(
 									[
 										$elm$html$Html$Attributes$type_('button'),
-										$elm$html$Html$Attributes$id('form-close-button')
+										$elm$html$Html$Attributes$id('form-close-button'),
+										$author$project$Main$onStopPropClick($author$project$Main$Close)
 									]),
 								_List_fromArray(
 									[
@@ -5523,9 +5607,7 @@ var $author$project$Main$view = function (model) {
 	return A2(
 		$elm$html$Html$main_,
 		_List_fromArray(
-			[
-				$author$project$Main$onCustomClick($author$project$Main$OpenCloseForm)
-			]),
+			[$author$project$Main$onCustomClick]),
 		_List_fromArray(
 			[
 				$author$project$Main$viewHeader,

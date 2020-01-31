@@ -174,7 +174,7 @@
     text-align: right;
   }
   
-  #submit-button,
+  #add-button,
   #form-close-button {
     margin: 0.2em 0;
     box-sizing: border-box;
@@ -193,12 +193,12 @@
     background-color: rgb(251, 251, 251);
   }
   
-  #submit-button {
+  #add-button {
     color: #fff;
     background-color: #007bff;
   }
   
-  #submit-button:hover,
+  #add-button:hover,
   #form-close-button:hover {
     filter: brightness(95%);
   }
