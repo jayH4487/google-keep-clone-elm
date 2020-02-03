@@ -42,8 +42,12 @@ type alias Note =
 
 type alias Model =
     { isFormOpen : Bool
-    , title : String
-    , text : String
+    , isModalOpen : Bool
+    , formTitle : String
+    , formText : String
+    , modalTitle : String
+    , modalText : String
+    , modalId : Int
     , notes : List Note
     }
 
@@ -51,9 +55,13 @@ type alias Model =
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { isFormOpen = False
-      , title = ""
-      , text = ""
-      , notes = []
+      , isModalOpen = False
+      , formTitle = ""
+      , formText = ""
+      , modalTitle = ""
+      , modalText = ""
+      , modalId = 0
+      , notes = [ { id = 1, title = "title1", text = "text1", color = "white" } ]
       }
     , Cmd.none
     )
@@ -64,61 +72,95 @@ init _ =
 
 
 type Msg
-    = Open
-    | Close
-    | Title String
-    | Text String
+    = OpenForm
+    | CloseForm
+    | FormTitle String
+    | FormText String
     | AddNote
     | CloseAndAddNote
     | DeleteNote Int
+    | OpenModal Int
+    | CloseModal
+    | ModalTitle String
+    | ModalText String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Open ->
+        OpenForm ->
             ( { model | isFormOpen = True }, Cmd.none )
 
-        Close ->
+        CloseForm ->
             ( { model | isFormOpen = False }, Cmd.none )
 
-        Title value ->
-            ( { model | title = value }, Cmd.none )
+        FormTitle value ->
+            ( { model | formTitle = value }, Cmd.none )
 
-        Text value ->
-            ( { model | text = value }, Cmd.none )
+        FormText value ->
+            ( { model | formText = value }, Cmd.none )
 
         AddNote ->
-            if model.title /= "" || model.text /= "" then
-                let
-                    newNotes =
-                        model.notes ++ [ { id = newId model, title = model.title, text = model.text, color = "white" } ]
-                in
-                ( { model | notes = newNotes, title = "", text = "", isFormOpen = False }, Cmd.none )
+            if model.formTitle /= "" || model.formText /= "" then
+                addNote model
 
             else
                 ( model, Cmd.none )
 
         CloseAndAddNote ->
-            if model.title /= "" || model.text /= "" then
-                let
-                    newNotes =
-                        model.notes ++ [ { id = newId model, title = model.title, text = model.text, color = "white" } ]
-                in
-                ( { model | notes = newNotes, title = "", text = "", isFormOpen = False }, Cmd.none )
+            if model.formTitle /= "" || model.formText /= "" then
+                addNote model
 
             else
                 ( { model | isFormOpen = False }, Cmd.none )
 
         DeleteNote id ->
             let
-                _ =
-                    Debug.log "id" id
-
+                -- _ =
+                --     Debug.log "id" id
                 newNotes =
                     List.filter (\note -> note.id /= id) model.notes
             in
             ( { model | notes = newNotes }, Cmd.none )
+
+        OpenModal id ->
+            let
+                -- _ =
+                --     Debug.log "id" id
+                { title, text } =
+                    case List.filter (\note -> note.id == id) model.notes of
+                        note :: _ ->
+                            note
+
+                        [] ->
+                            { id = id, title = "", text = "", color = "white" }
+            in
+            ( { model | isModalOpen = True, modalTitle = title, modalText = text, modalId = id }, Cmd.none )
+
+        CloseModal ->
+            let
+                newNotes =
+                    List.map
+                        (\note ->
+                            if note.id == model.modalId then
+                                { note | title = model.modalTitle, text = model.modalText }
+
+                            else
+                                note
+                        )
+                        model.notes
+            in
+            ( { model | isModalOpen = False, notes = newNotes }, Cmd.none )
+
+        ModalTitle value ->
+            ( { model | modalTitle = value }, Cmd.none )
+
+        ModalText value ->
+            ( { model | modalText = value }, Cmd.none )
+
+
+
+-- UPDATE HELPER FUNCTIONS
 
 
 newId : Model -> Int
@@ -140,18 +182,31 @@ newId model =
             + 1
 
 
+addNote : Model -> ( Model, Cmd Msg )
+addNote model =
+    let
+        newNotes =
+            model.notes ++ [ { id = newId model, title = model.formTitle, text = model.formText, color = "white" } ]
+    in
+    ( { model | notes = newNotes, formTitle = "", formText = "", isFormOpen = False }, Cmd.none )
+
+
 
 -- VIEW
 
 
 view : Model -> Html Msg
 view model =
-    main_ [ onCustomClick ]
-        [ viewHeader
-        , viewFormContainer model
-        , div []
-            [ viewNotes model
-            , viewPlaceholder
+    div []
+        [ viewModal model
+        , main_
+            [ onClickContains "form" ]
+            [ viewHeader
+            , viewFormContainer model
+            , div []
+                [ viewNotes model
+                , viewPlaceholder
+                ]
             ]
         ]
 
@@ -181,13 +236,7 @@ viewFormContainer : Model -> Html Msg
 viewFormContainer model =
     div
         [ id "form-container"
-        , class
-            (if model.isFormOpen then
-                "form-open"
-
-             else
-                ""
-            )
+        , classList [ ( "form-open", model.isFormOpen ) ]
         ]
         [ Html.form [ id "form", autocomplete False ]
             [ input
@@ -201,16 +250,16 @@ viewFormContainer model =
                      else
                         "none"
                     )
-                , onInput Title
-                , value model.title
+                , onInput FormTitle
+                , value model.formTitle
                 ]
                 []
             , input
                 [ id "note-text"
                 , placeholder "Take a note..."
                 , type_ "text"
-                , onInput Text
-                , value model.text
+                , onInput FormText
+                , value model.formText
                 ]
                 []
             , div
@@ -232,7 +281,7 @@ viewFormContainer model =
                 , button
                     [ type_ "button"
                     , id "form-close-button"
-                    , onClickStopProp Close
+                    , onClickStopProp CloseForm
                     ]
                     [ text "Close" ]
                 ]
@@ -247,15 +296,9 @@ viewNotes model =
 
 viewNote : Note -> Html Msg
 viewNote note =
-    div [ class "note", style "background" note.color ]
+    div [ class "note", style "background" note.color, onClickStopProp (OpenModal note.id) ]
         [ div
-            [ class
-                (if note.title == "" then
-                    ""
-
-                 else
-                    "note-title"
-                )
+            [ classList [ ( "note-title", note.title /= "" ) ]
             ]
             [ text note.title ]
         , div [ class "note-text" ] [ text note.text ]
@@ -268,37 +311,66 @@ viewNote note =
         ]
 
 
-onCustomClick : Attribute Msg
-onCustomClick =
-    on "click" targetDecoder
+viewModal : Model -> Html Msg
+viewModal model =
+    div [ classList [ ( "modal", True ), ( "open-modal", model.isModalOpen ) ] ]
+        [ div [ class "modal-content" ]
+            [ input
+                [ class "modal-title"
+                , placeholder "Title"
+                , type_ "text"
+                , onInput ModalTitle
+                , value model.modalTitle
+                ]
+                []
+            , input
+                [ class "modal-text"
+                , placeholder "Take a note..."
+                , type_ "text"
+                , onInput ModalText
+                , value model.modalText
+                ]
+                []
+            , span [ class "modal-close-button", onClick CloseModal ] [ text "Close" ]
+            ]
+        ]
 
 
-targetDecoder : Decode.Decoder Msg
-targetDecoder =
-    Decode.at [ "target" ] isOutsideForm
+
+-- HELPER FUNCTIONS
+
+
+onClickContains : String -> Attribute Msg
+onClickContains nodeId =
+    on "click" (containsDecoder nodeId)
+
+
+containsDecoder : String -> Decode.Decoder Msg
+containsDecoder nodeId =
+    Decode.at [ "target" ] (isOutsideForm nodeId)
         |> Decode.andThen
             (\isOutside ->
                 if isOutside then
                     Decode.succeed CloseAndAddNote
 
                 else
-                    Decode.succeed Open
+                    Decode.succeed OpenForm
             )
 
 
-isOutsideForm : Decode.Decoder Bool
-isOutsideForm =
+isOutsideForm : String -> Decode.Decoder Bool
+isOutsideForm nodeId =
     Decode.oneOf
         [ Decode.field "id" Decode.string
             |> Decode.andThen
                 (\id ->
-                    if id == "form" then
+                    if id == nodeId then
                         Decode.succeed False
 
                     else
                         Decode.fail ""
                 )
-        , Decode.lazy (\_ -> isOutsideForm |> Decode.field "parentNode")
+        , Decode.lazy (\_ -> isOutsideForm nodeId |> Decode.field "parentNode")
         , Decode.succeed True
         ]
 
@@ -311,23 +383,3 @@ onClickStopProp message =
 alwaysStop : a -> ( a, Bool )
 alwaysStop x =
     ( x, True )
-
-
-
--- checkParentNode : String -> Decode.Decoder Msg
--- checkParentNode id =
---     case id of
---         "note-title" ->
---             let
---                 _ =
---                     Debug.log "clicked" id
---             in
---             Decode.succeed Open
---         "form-buttons" ->
---             Decode.succeed Open
---         _ ->
---             let
---                 _ =
---                     Debug.log "clicked" id
---             in
---             Decode.succeed Open

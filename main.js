@@ -5148,13 +5148,53 @@ var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Main$init = function (_v0) {
 	return _Utils_Tuple2(
-		{isFormOpen: false, notes: _List_Nil, text: '', title: ''},
+		{
+			formText: '',
+			formTitle: '',
+			isFormOpen: false,
+			isModalOpen: false,
+			modalId: 0,
+			modalText: '',
+			modalTitle: '',
+			notes: _List_fromArray(
+				[
+					{color: 'white', id: 1, text: 'text1', title: 'title1'}
+				])
+		},
 		$elm$core$Platform$Cmd$none);
 };
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
 var $author$project$Main$subscriptions = function (_v0) {
 	return $elm$core$Platform$Sub$none;
+};
+var $author$project$Main$newId = function (model) {
+	return (!$elm$core$List$length(model.notes)) ? 1 : (A3(
+		$elm$core$List$foldl,
+		F2(
+			function (note, acc) {
+				return (_Utils_cmp(note.id, acc) > 0) ? note.id : acc;
+			}),
+		0,
+		model.notes) + 1);
+};
+var $author$project$Main$addNote = function (model) {
+	var newNotes = _Utils_ap(
+		model.notes,
+		_List_fromArray(
+			[
+				{
+				color: 'white',
+				id: $author$project$Main$newId(model),
+				text: model.formText,
+				title: model.formTitle
+			}
+			]));
+	return _Utils_Tuple2(
+		_Utils_update(
+			model,
+			{formText: '', formTitle: '', isFormOpen: false, notes: newNotes}),
+		$elm$core$Platform$Cmd$none);
 };
 var $elm$core$List$filter = F2(
 	function (isGood, list) {
@@ -5167,94 +5207,45 @@ var $elm$core$List$filter = F2(
 			_List_Nil,
 			list);
 	});
-var $elm$core$Debug$log = _Debug_log;
 var $elm$core$Basics$neq = _Utils_notEqual;
-var $author$project$Main$newId = function (model) {
-	return (!$elm$core$List$length(model.notes)) ? 1 : (A3(
-		$elm$core$List$foldl,
-		F2(
-			function (note, acc) {
-				return (_Utils_cmp(note.id, acc) > 0) ? note.id : acc;
-			}),
-		0,
-		model.notes) + 1);
-};
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
-			case 'Open':
+			case 'OpenForm':
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{isFormOpen: true}),
 					$elm$core$Platform$Cmd$none);
-			case 'Close':
+			case 'CloseForm':
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{isFormOpen: false}),
 					$elm$core$Platform$Cmd$none);
-			case 'Title':
+			case 'FormTitle':
 				var value = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{title: value}),
+						{formTitle: value}),
 					$elm$core$Platform$Cmd$none);
-			case 'Text':
+			case 'FormText':
 				var value = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{text: value}),
+						{formText: value}),
 					$elm$core$Platform$Cmd$none);
 			case 'AddNote':
-				if ((model.title !== '') || (model.text !== '')) {
-					var newNotes = _Utils_ap(
-						model.notes,
-						_List_fromArray(
-							[
-								{
-								color: 'white',
-								id: $author$project$Main$newId(model),
-								text: model.text,
-								title: model.title
-							}
-							]));
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{isFormOpen: false, notes: newNotes, text: '', title: ''}),
-						$elm$core$Platform$Cmd$none);
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
+				return ((model.formTitle !== '') || (model.formText !== '')) ? $author$project$Main$addNote(model) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 			case 'CloseAndAddNote':
-				if ((model.title !== '') || (model.text !== '')) {
-					var newNotes = _Utils_ap(
-						model.notes,
-						_List_fromArray(
-							[
-								{
-								color: 'white',
-								id: $author$project$Main$newId(model),
-								text: model.text,
-								title: model.title
-							}
-							]));
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{isFormOpen: false, notes: newNotes, text: '', title: ''}),
-						$elm$core$Platform$Cmd$none);
-				} else {
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{isFormOpen: false}),
-						$elm$core$Platform$Cmd$none);
-				}
-			default:
+				return ((model.formTitle !== '') || (model.formText !== '')) ? $author$project$Main$addNote(model) : _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{isFormOpen: false}),
+					$elm$core$Platform$Cmd$none);
+			case 'DeleteNote':
 				var id = msg.a;
 				var newNotes = A2(
 					$elm$core$List$filter,
@@ -5262,29 +5253,68 @@ var $author$project$Main$update = F2(
 						return !_Utils_eq(note.id, id);
 					},
 					model.notes);
-				var _v1 = A2($elm$core$Debug$log, 'id', id);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{notes: newNotes}),
 					$elm$core$Platform$Cmd$none);
+			case 'OpenModal':
+				var id = msg.a;
+				var _v1 = function () {
+					var _v2 = A2(
+						$elm$core$List$filter,
+						function (note) {
+							return _Utils_eq(note.id, id);
+						},
+						model.notes);
+					if (_v2.b) {
+						var note = _v2.a;
+						return note;
+					} else {
+						return {color: 'white', id: id, text: '', title: ''};
+					}
+				}();
+				var title = _v1.title;
+				var text = _v1.text;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{isModalOpen: true, modalId: id, modalText: text, modalTitle: title}),
+					$elm$core$Platform$Cmd$none);
+			case 'CloseModal':
+				var newNotes = A2(
+					$elm$core$List$map,
+					function (note) {
+						return _Utils_eq(note.id, model.modalId) ? _Utils_update(
+							note,
+							{text: model.modalText, title: model.modalTitle}) : note;
+					},
+					model.notes);
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{isModalOpen: false, notes: newNotes}),
+					$elm$core$Platform$Cmd$none);
+			case 'ModalTitle':
+				var value = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modalTitle: value}),
+					$elm$core$Platform$Cmd$none);
+			default:
+				var value = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{modalText: value}),
+					$elm$core$Platform$Cmd$none);
 		}
 	});
 var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$html$Html$main_ = _VirtualDom_node('main');
-var $elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
-var $elm$html$Html$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$Normal(decoder));
-	});
 var $author$project$Main$CloseAndAddNote = {$: 'CloseAndAddNote'};
-var $author$project$Main$Open = {$: 'Open'};
+var $author$project$Main$OpenForm = {$: 'OpenForm'};
 var $elm$json$Json$Decode$andThen = _Json_andThen;
 var $elm$json$Json$Decode$field = _Json_decodeField;
 var $elm$json$Json$Decode$at = F2(
@@ -5300,14 +5330,14 @@ var $elm$json$Json$Decode$lazy = function (thunk) {
 };
 var $elm$json$Json$Decode$oneOf = _Json_oneOf;
 var $elm$json$Json$Decode$string = _Json_decodeString;
-function $author$project$Main$cyclic$isOutsideForm() {
+var $author$project$Main$isOutsideForm = function (nodeId) {
 	return $elm$json$Json$Decode$oneOf(
 		_List_fromArray(
 			[
 				A2(
 				$elm$json$Json$Decode$andThen,
 				function (id) {
-					return (id === 'form') ? $elm$json$Json$Decode$succeed(false) : $elm$json$Json$Decode$fail('');
+					return _Utils_eq(id, nodeId) ? $elm$json$Json$Decode$succeed(false) : $elm$json$Json$Decode$fail('');
 				},
 				A2($elm$json$Json$Decode$field, 'id', $elm$json$Json$Decode$string)),
 				$elm$json$Json$Decode$lazy(
@@ -5315,36 +5345,47 @@ function $author$project$Main$cyclic$isOutsideForm() {
 					return A2(
 						$elm$json$Json$Decode$field,
 						'parentNode',
-						$author$project$Main$cyclic$isOutsideForm());
+						$author$project$Main$isOutsideForm(nodeId));
 				}),
 				$elm$json$Json$Decode$succeed(true)
 			]));
-}
-try {
-	var $author$project$Main$isOutsideForm = $author$project$Main$cyclic$isOutsideForm();
-	$author$project$Main$cyclic$isOutsideForm = function () {
-		return $author$project$Main$isOutsideForm;
-	};
-} catch ($) {
-	throw 'Some top-level definitions from `Main` are causing infinite recursion:\n\n  ┌─────┐\n  │    isOutsideForm\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
-var $author$project$Main$targetDecoder = A2(
-	$elm$json$Json$Decode$andThen,
-	function (isOutside) {
-		return isOutside ? $elm$json$Json$Decode$succeed($author$project$Main$CloseAndAddNote) : $elm$json$Json$Decode$succeed($author$project$Main$Open);
-	},
-	A2(
-		$elm$json$Json$Decode$at,
-		_List_fromArray(
-			['target']),
-		$author$project$Main$isOutsideForm));
-var $author$project$Main$onCustomClick = A2($elm$html$Html$Events$on, 'click', $author$project$Main$targetDecoder);
-var $author$project$Main$AddNote = {$: 'AddNote'};
-var $author$project$Main$Close = {$: 'Close'};
-var $author$project$Main$Text = function (a) {
-	return {$: 'Text', a: a};
 };
-var $author$project$Main$Title = function (a) {
-	return {$: 'Title', a: a};
+var $author$project$Main$containsDecoder = function (nodeId) {
+	return A2(
+		$elm$json$Json$Decode$andThen,
+		function (isOutside) {
+			return isOutside ? $elm$json$Json$Decode$succeed($author$project$Main$CloseAndAddNote) : $elm$json$Json$Decode$succeed($author$project$Main$OpenForm);
+		},
+		A2(
+			$elm$json$Json$Decode$at,
+			_List_fromArray(
+				['target']),
+			$author$project$Main$isOutsideForm(nodeId)));
+};
+var $elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var $elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var $author$project$Main$onClickContains = function (nodeId) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'click',
+		$author$project$Main$containsDecoder(nodeId));
+};
+var $author$project$Main$AddNote = {$: 'AddNote'};
+var $author$project$Main$CloseForm = {$: 'CloseForm'};
+var $author$project$Main$FormText = function (a) {
+	return {$: 'FormText', a: a};
+};
+var $author$project$Main$FormTitle = function (a) {
+	return {$: 'FormTitle', a: a};
 };
 var $elm$json$Json$Encode$string = _Json_wrap;
 var $elm$html$Html$Attributes$stringProperty = F2(
@@ -5362,6 +5403,20 @@ var $elm$html$Html$Attributes$autocomplete = function (bool) {
 };
 var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
+var $elm$core$Tuple$second = function (_v0) {
+	var y = _v0.b;
+	return y;
+};
+var $elm$html$Html$Attributes$classList = function (classes) {
+	return $elm$html$Html$Attributes$class(
+		A2(
+			$elm$core$String$join,
+			' ',
+			A2(
+				$elm$core$List$map,
+				$elm$core$Tuple$first,
+				A2($elm$core$List$filter, $elm$core$Tuple$second, classes))));
+};
 var $elm$html$Html$form = _VirtualDom_node('form');
 var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
 var $elm$html$Html$input = _VirtualDom_node('input');
@@ -5417,8 +5472,11 @@ var $author$project$Main$viewFormContainer = function (model) {
 		_List_fromArray(
 			[
 				$elm$html$Html$Attributes$id('form-container'),
-				$elm$html$Html$Attributes$class(
-				model.isFormOpen ? 'form-open' : '')
+				$elm$html$Html$Attributes$classList(
+				_List_fromArray(
+					[
+						_Utils_Tuple2('form-open', model.isFormOpen)
+					]))
 			]),
 		_List_fromArray(
 			[
@@ -5442,8 +5500,8 @@ var $author$project$Main$viewFormContainer = function (model) {
 								$elm$html$Html$Attributes$style,
 								'display',
 								model.isFormOpen ? 'block' : 'none'),
-								$elm$html$Html$Events$onInput($author$project$Main$Title),
-								$elm$html$Html$Attributes$value(model.title)
+								$elm$html$Html$Events$onInput($author$project$Main$FormTitle),
+								$elm$html$Html$Attributes$value(model.formTitle)
 							]),
 						_List_Nil),
 						A2(
@@ -5453,8 +5511,8 @@ var $author$project$Main$viewFormContainer = function (model) {
 								$elm$html$Html$Attributes$id('note-text'),
 								$elm$html$Html$Attributes$placeholder('Take a note...'),
 								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Events$onInput($author$project$Main$Text),
-								$elm$html$Html$Attributes$value(model.text)
+								$elm$html$Html$Events$onInput($author$project$Main$FormText),
+								$elm$html$Html$Attributes$value(model.formText)
 							]),
 						_List_Nil),
 						A2(
@@ -5487,7 +5545,7 @@ var $author$project$Main$viewFormContainer = function (model) {
 									[
 										$elm$html$Html$Attributes$type_('button'),
 										$elm$html$Html$Attributes$id('form-close-button'),
-										$author$project$Main$onClickStopProp($author$project$Main$Close)
+										$author$project$Main$onClickStopProp($author$project$Main$CloseForm)
 									]),
 								_List_fromArray(
 									[
@@ -5530,16 +5588,31 @@ var $author$project$Main$viewHeader = A2(
 					$elm$html$Html$text('Keep')
 				]))
 		]));
-var $author$project$Main$DeleteNote = function (a) {
-	return {$: 'DeleteNote', a: a};
+var $author$project$Main$CloseModal = {$: 'CloseModal'};
+var $author$project$Main$ModalText = function (a) {
+	return {$: 'ModalText', a: a};
 };
-var $author$project$Main$viewNote = function (note) {
+var $author$project$Main$ModalTitle = function (a) {
+	return {$: 'ModalTitle', a: a};
+};
+var $elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'click',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $elm$html$Html$span = _VirtualDom_node('span');
+var $author$project$Main$viewModal = function (model) {
 	return A2(
 		$elm$html$Html$div,
 		_List_fromArray(
 			[
-				$elm$html$Html$Attributes$class('note'),
-				A2($elm$html$Html$Attributes$style, 'background', note.color)
+				$elm$html$Html$Attributes$classList(
+				_List_fromArray(
+					[
+						_Utils_Tuple2('modal', true),
+						_Utils_Tuple2('open-modal', model.isModalOpen)
+					]))
 			]),
 		_List_fromArray(
 			[
@@ -5547,8 +5620,73 @@ var $author$project$Main$viewNote = function (note) {
 				$elm$html$Html$div,
 				_List_fromArray(
 					[
-						$elm$html$Html$Attributes$class(
-						(note.title === '') ? '' : 'note-title')
+						$elm$html$Html$Attributes$class('modal-content')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('modal-title'),
+								$elm$html$Html$Attributes$placeholder('Title'),
+								$elm$html$Html$Attributes$type_('text'),
+								$elm$html$Html$Events$onInput($author$project$Main$ModalTitle),
+								$elm$html$Html$Attributes$value(model.modalTitle)
+							]),
+						_List_Nil),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('modal-text'),
+								$elm$html$Html$Attributes$placeholder('Take a note...'),
+								$elm$html$Html$Attributes$type_('text'),
+								$elm$html$Html$Events$onInput($author$project$Main$ModalText),
+								$elm$html$Html$Attributes$value(model.modalText)
+							]),
+						_List_Nil),
+						A2(
+						$elm$html$Html$span,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('modal-close-button'),
+								$elm$html$Html$Events$onClick($author$project$Main$CloseModal)
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Close')
+							]))
+					]))
+			]));
+};
+var $author$project$Main$DeleteNote = function (a) {
+	return {$: 'DeleteNote', a: a};
+};
+var $author$project$Main$OpenModal = function (a) {
+	return {$: 'OpenModal', a: a};
+};
+var $author$project$Main$viewNote = function (note) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('note'),
+				A2($elm$html$Html$Attributes$style, 'background', note.color),
+				$author$project$Main$onClickStopProp(
+				$author$project$Main$OpenModal(note.id))
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$classList(
+						_List_fromArray(
+							[
+								_Utils_Tuple2('note-title', note.title !== '')
+							]))
 					]),
 				_List_fromArray(
 					[
@@ -5641,20 +5779,29 @@ var $author$project$Main$viewPlaceholder = A2(
 		]));
 var $author$project$Main$view = function (model) {
 	return A2(
-		$elm$html$Html$main_,
-		_List_fromArray(
-			[$author$project$Main$onCustomClick]),
+		$elm$html$Html$div,
+		_List_Nil,
 		_List_fromArray(
 			[
-				$author$project$Main$viewHeader,
-				$author$project$Main$viewFormContainer(model),
+				$author$project$Main$viewModal(model),
 				A2(
-				$elm$html$Html$div,
-				_List_Nil,
+				$elm$html$Html$main_,
 				_List_fromArray(
 					[
-						$author$project$Main$viewNotes(model),
-						$author$project$Main$viewPlaceholder
+						$author$project$Main$onClickContains('form')
+					]),
+				_List_fromArray(
+					[
+						$author$project$Main$viewHeader,
+						$author$project$Main$viewFormContainer(model),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$author$project$Main$viewNotes(model),
+								$author$project$Main$viewPlaceholder
+							]))
 					]))
 			]));
 };
