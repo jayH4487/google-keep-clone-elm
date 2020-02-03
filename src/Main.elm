@@ -66,30 +66,16 @@ init _ =
 type Msg
     = Open
     | Close
-    | OpenCloseForm Bool
     | Title String
     | Text String
     | AddNote
     | CloseAndAddNote
+    | DeleteNote Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        OpenCloseForm bool ->
-            let
-                _ =
-                    Debug.log "clicked" bool
-
-                newNotes =
-                    if model.title == "" && model.title == "" then
-                        model.notes
-
-                    else
-                        model.notes ++ [ { id = 0, title = model.title, text = model.text, color = "white" } ]
-            in
-            ( { model | isFormOpen = bool, notes = newNotes, title = "", text = "" }, Cmd.none )
-
         Open ->
             ( { model | isFormOpen = True }, Cmd.none )
 
@@ -106,7 +92,7 @@ update msg model =
             if model.title /= "" || model.text /= "" then
                 let
                     newNotes =
-                        model.notes ++ [ { id = 0, title = model.title, text = model.text, color = "white" } ]
+                        model.notes ++ [ { id = newId model, title = model.title, text = model.text, color = "white" } ]
                 in
                 ( { model | notes = newNotes, title = "", text = "", isFormOpen = False }, Cmd.none )
 
@@ -117,12 +103,41 @@ update msg model =
             if model.title /= "" || model.text /= "" then
                 let
                     newNotes =
-                        model.notes ++ [ { id = 0, title = model.title, text = model.text, color = "white" } ]
+                        model.notes ++ [ { id = newId model, title = model.title, text = model.text, color = "white" } ]
                 in
                 ( { model | notes = newNotes, title = "", text = "", isFormOpen = False }, Cmd.none )
 
             else
                 ( { model | isFormOpen = False }, Cmd.none )
+
+        DeleteNote id ->
+            let
+                _ =
+                    Debug.log "id" id
+
+                newNotes =
+                    List.filter (\note -> note.id /= id) model.notes
+            in
+            ( { model | notes = newNotes }, Cmd.none )
+
+
+newId : Model -> Int
+newId model =
+    if List.length model.notes == 0 then
+        1
+
+    else
+        List.foldl
+            (\note acc ->
+                if note.id > acc then
+                    note.id
+
+                else
+                    acc
+            )
+            0
+            model.notes
+            + 1
 
 
 
@@ -211,13 +226,13 @@ viewFormContainer model =
                 [ button
                     [ type_ "button"
                     , id "add-button"
-                    , onStopPropClick AddNote
+                    , onClickStopProp AddNote
                     ]
                     [ text "Add" ]
                 , button
                     [ type_ "button"
                     , id "form-close-button"
-                    , onStopPropClick Close
+                    , onClickStopProp Close
                     ]
                     [ text "Close" ]
                 ]
@@ -247,7 +262,7 @@ viewNote note =
         , div [ class "toolbar-container" ]
             [ div [ class "toolbar" ]
                 [ img [ class "toolbar-color", src "https://icon.now.sh/palette" ] []
-                , img [ class "toolbar-delete", src "https://icon.now.sh/delete" ] []
+                , img [ class "toolbar-delete", src "https://icon.now.sh/delete", onClickStopProp (DeleteNote note.id) ] []
                 ]
             ]
         ]
@@ -288,8 +303,8 @@ isOutsideForm =
         ]
 
 
-onStopPropClick : Msg -> Attribute Msg
-onStopPropClick message =
+onClickStopProp : Msg -> Attribute Msg
+onClickStopProp message =
     stopPropagationOn "click" (Decode.map alwaysStop (Decode.succeed message))
 
 

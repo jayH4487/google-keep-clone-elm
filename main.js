@@ -5156,25 +5156,32 @@ var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
 var $author$project$Main$subscriptions = function (_v0) {
 	return $elm$core$Platform$Sub$none;
 };
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
 var $elm$core$Debug$log = _Debug_log;
 var $elm$core$Basics$neq = _Utils_notEqual;
+var $author$project$Main$newId = function (model) {
+	return (!$elm$core$List$length(model.notes)) ? 1 : (A3(
+		$elm$core$List$foldl,
+		F2(
+			function (note, acc) {
+				return (_Utils_cmp(note.id, acc) > 0) ? note.id : acc;
+			}),
+		0,
+		model.notes) + 1);
+};
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
-			case 'OpenCloseForm':
-				var bool = msg.a;
-				var newNotes = ((model.title === '') && (model.title === '')) ? model.notes : _Utils_ap(
-					model.notes,
-					_List_fromArray(
-						[
-							{color: 'white', id: 0, text: model.text, title: model.title}
-						]));
-				var _v1 = A2($elm$core$Debug$log, 'clicked', bool);
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{isFormOpen: bool, notes: newNotes, text: '', title: ''}),
-					$elm$core$Platform$Cmd$none);
 			case 'Open':
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -5207,7 +5214,12 @@ var $author$project$Main$update = F2(
 						model.notes,
 						_List_fromArray(
 							[
-								{color: 'white', id: 0, text: model.text, title: model.title}
+								{
+								color: 'white',
+								id: $author$project$Main$newId(model),
+								text: model.text,
+								title: model.title
+							}
 							]));
 					return _Utils_Tuple2(
 						_Utils_update(
@@ -5217,13 +5229,18 @@ var $author$project$Main$update = F2(
 				} else {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
-			default:
+			case 'CloseAndAddNote':
 				if ((model.title !== '') || (model.text !== '')) {
 					var newNotes = _Utils_ap(
 						model.notes,
 						_List_fromArray(
 							[
-								{color: 'white', id: 0, text: model.text, title: model.title}
+								{
+								color: 'white',
+								id: $author$project$Main$newId(model),
+								text: model.text,
+								title: model.title
+							}
 							]));
 					return _Utils_Tuple2(
 						_Utils_update(
@@ -5237,6 +5254,20 @@ var $author$project$Main$update = F2(
 							{isFormOpen: false}),
 						$elm$core$Platform$Cmd$none);
 				}
+			default:
+				var id = msg.a;
+				var newNotes = A2(
+					$elm$core$List$filter,
+					function (note) {
+						return !_Utils_eq(note.id, id);
+					},
+					model.notes);
+				var _v1 = A2($elm$core$Debug$log, 'id', id);
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{notes: newNotes}),
+					$elm$core$Platform$Cmd$none);
 		}
 	});
 var $elm$html$Html$div = _VirtualDom_node('div');
@@ -5334,7 +5365,7 @@ var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('
 var $elm$html$Html$form = _VirtualDom_node('form');
 var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
 var $elm$html$Html$input = _VirtualDom_node('input');
-var $elm$html$Html$Events$alwaysStop = function (x) {
+var $author$project$Main$alwaysStop = function (x) {
 	return _Utils_Tuple2(x, true);
 };
 var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
@@ -5347,6 +5378,18 @@ var $elm$html$Html$Events$stopPropagationOn = F2(
 			event,
 			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
 	});
+var $author$project$Main$onClickStopProp = function (message) {
+	return A2(
+		$elm$html$Html$Events$stopPropagationOn,
+		'click',
+		A2(
+			$elm$json$Json$Decode$map,
+			$author$project$Main$alwaysStop,
+			$elm$json$Json$Decode$succeed(message)));
+};
+var $elm$html$Html$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
 var $elm$html$Html$Events$targetValue = A2(
 	$elm$json$Json$Decode$at,
 	_List_fromArray(
@@ -5360,18 +5403,6 @@ var $elm$html$Html$Events$onInput = function (tagger) {
 			$elm$json$Json$Decode$map,
 			$elm$html$Html$Events$alwaysStop,
 			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
-};
-var $author$project$Main$alwaysStop = function (x) {
-	return _Utils_Tuple2(x, true);
-};
-var $author$project$Main$onStopPropClick = function (message) {
-	return A2(
-		$elm$html$Html$Events$stopPropagationOn,
-		'click',
-		A2(
-			$elm$json$Json$Decode$map,
-			$author$project$Main$alwaysStop,
-			$elm$json$Json$Decode$succeed(message)));
 };
 var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
 var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
@@ -5444,7 +5475,7 @@ var $author$project$Main$viewFormContainer = function (model) {
 									[
 										$elm$html$Html$Attributes$type_('button'),
 										$elm$html$Html$Attributes$id('add-button'),
-										$author$project$Main$onStopPropClick($author$project$Main$AddNote)
+										$author$project$Main$onClickStopProp($author$project$Main$AddNote)
 									]),
 								_List_fromArray(
 									[
@@ -5456,7 +5487,7 @@ var $author$project$Main$viewFormContainer = function (model) {
 									[
 										$elm$html$Html$Attributes$type_('button'),
 										$elm$html$Html$Attributes$id('form-close-button'),
-										$author$project$Main$onStopPropClick($author$project$Main$Close)
+										$author$project$Main$onClickStopProp($author$project$Main$Close)
 									]),
 								_List_fromArray(
 									[
@@ -5499,6 +5530,9 @@ var $author$project$Main$viewHeader = A2(
 					$elm$html$Html$text('Keep')
 				]))
 		]));
+var $author$project$Main$DeleteNote = function (a) {
+	return {$: 'DeleteNote', a: a};
+};
 var $author$project$Main$viewNote = function (note) {
 	return A2(
 		$elm$html$Html$div,
@@ -5559,7 +5593,9 @@ var $author$project$Main$viewNote = function (note) {
 								_List_fromArray(
 									[
 										$elm$html$Html$Attributes$class('toolbar-delete'),
-										$elm$html$Html$Attributes$src('https://icon.now.sh/delete')
+										$elm$html$Html$Attributes$src('https://icon.now.sh/delete'),
+										$author$project$Main$onClickStopProp(
+										$author$project$Main$DeleteNote(note.id))
 									]),
 								_List_Nil)
 							]))
