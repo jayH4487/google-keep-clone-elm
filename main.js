@@ -5215,6 +5215,7 @@ var $elm$core$List$filter = F2(
 			list);
 	});
 var $elm$json$Json$Encode$int = _Json_wrap;
+var $elm$core$Debug$log = _Debug_log;
 var $elm$core$Basics$neq = _Utils_notEqual;
 var $author$project$Main$update = F2(
 	function (msg, model) {
@@ -5327,6 +5328,7 @@ var $author$project$Main$update = F2(
 						$elm$json$Json$Encode$int(value)));
 			case 'GotNoteCoords':
 				var value = msg.a;
+				var _v3 = A2($elm$core$Debug$log, 'coords', value);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -5939,9 +5941,9 @@ var $author$project$Main$view = function (model) {
 							[
 								$author$project$Main$viewNotes(model),
 								($elm$core$List$length(model.notes) > 0) ? A2($elm$html$Html$div, _List_Nil, _List_Nil) : $author$project$Main$viewPlaceholder
-							])),
-						model.showColorToolTip ? $author$project$Main$viewColorTooltip(model) : A2($elm$html$Html$div, _List_Nil, _List_Nil)
-					]))
+							]))
+					])),
+				model.showColorToolTip ? $author$project$Main$viewColorTooltip(model) : A2($elm$html$Html$div, _List_Nil, _List_Nil)
 			]));
 };
 var $author$project$Main$main = $elm$browser$Browser$element(

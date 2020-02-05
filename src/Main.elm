@@ -179,6 +179,10 @@ update msg model =
             ( { model | showColorToolTip = True, colorToolTipId = value }, colorToolBar (Encode.int value) )
 
         GotNoteCoords value ->
+            let
+                _ =
+                    Debug.log "coords" value
+            in
             ( { model | noteCoords = value }, Cmd.none )
 
         ChangeColor value ->
@@ -252,12 +256,12 @@ view model =
                   else
                     viewPlaceholder
                 ]
-            , if model.showColorToolTip then
-                viewColorTooltip model
-
-              else
-                div [] []
             ]
+        , if model.showColorToolTip then
+            viewColorTooltip model
+
+          else
+            div [] []
         ]
 
 

@@ -292,7 +292,7 @@
   #color-tooltip {
     border-bottom: 2px solid #fff;
     position: absolute;
-    top: -40;
+    top: 0;
     background: #fff;
     border: 1px solid black;
     left: 0;

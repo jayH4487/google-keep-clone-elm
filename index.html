@@ -25,10 +25,10 @@
                 // console.log(id)
                 const $colorTool = document.querySelector(`.toolbar-color${id}`)
                 // console.log($colorTool)
-                // console.log($colorTool.getBoundingClientRect())
+                console.log($colorTool.getBoundingClientRect())
                 const noteCoords = $colorTool.getBoundingClientRect()
-                const horizontal = noteCoords.left + window.scrollX
-                const vertical = -45
+                const horizontal = noteCoords.left + window.scrollX - 5
+                const vertical = noteCoords.top + window.scrollY - 5
                 // console.log({ horizontal }, { vertical })
                 const x = Math.round(horizontal)
                 const y = Math.round(vertical)
