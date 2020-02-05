@@ -15,7 +15,25 @@
         <div id="app"></div>
         <script src="main.js"></script>
         <script>
-            var app = Elm.Main.init({ node: document.querySelector("#app") })
+            var app = Elm.Main.init({
+                node: document.querySelector("#app"),
+                flags: { x: 0, y: 0 }
+            })
+            app.ports.colorToolBar.subscribe(id => getBDCR(id))
+
+            function getBDCR(id) {
+                // console.log(id)
+                const $colorTool = document.querySelector(`.toolbar-color${id}`)
+                // console.log($colorTool)
+                // console.log($colorTool.getBoundingClientRect())
+                const noteCoords = $colorTool.getBoundingClientRect()
+                const horizontal = noteCoords.left + window.scrollX
+                const vertical = -45
+                // console.log({ horizontal }, { vertical })
+                const x = Math.round(horizontal)
+                const y = Math.round(vertical)
+                app.ports.noteCoordsE.send({ x, y })
+            }
         </script>
     </body>
 

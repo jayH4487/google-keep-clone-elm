@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Browser
 import Browser.Events
@@ -6,14 +6,15 @@ import Debug
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Json.Decode as Decode
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode
 
 
 
 -- MAIN
 
 
-main : Program () Model Msg
+main : Program NoteCoords Model Msg
 main =
     Browser.element
         { init = init
@@ -24,12 +25,22 @@ main =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    noteCoordsE GotNoteCoords
+
+
+port colorToolBar : Encode.Value -> Cmd msg
+
+
+port noteCoordsE : (NoteCoords -> msg) -> Sub msg
 
 
 
 -- MODEL
+
+
+type alias NoteCoords =
+    { x : Int, y : Int }
 
 
 type alias Note =
@@ -48,12 +59,15 @@ type alias Model =
     , modalTitle : String
     , modalText : String
     , modalId : Int
+    , showColorToolTip : Bool
+    , colorToolTipId : Int
+    , noteCoords : NoteCoords
     , notes : List Note
     }
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
+init : NoteCoords -> ( Model, Cmd Msg )
+init noteCoords =
     ( { isFormOpen = False
       , isModalOpen = False
       , formTitle = ""
@@ -61,7 +75,10 @@ init _ =
       , modalTitle = ""
       , modalText = ""
       , modalId = 0
-      , notes = [ { id = 1, title = "title1", text = "text1", color = "white" } ]
+      , showColorToolTip = False
+      , colorToolTipId = 0
+      , noteCoords = noteCoords
+      , notes = []
       }
     , Cmd.none
     )
@@ -83,6 +100,10 @@ type Msg
     | CloseModal
     | ModalTitle String
     | ModalText String
+    | OpenToolTip Int
+    | CloseToolTip
+    | GotNoteCoords NoteCoords
+    | ChangeColor String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -116,8 +137,6 @@ update msg model =
 
         DeleteNote id ->
             let
-                -- _ =
-                --     Debug.log "id" id
                 newNotes =
                     List.filter (\note -> note.id /= id) model.notes
             in
@@ -125,8 +144,6 @@ update msg model =
 
         OpenModal id ->
             let
-                -- _ =
-                --     Debug.log "id" id
                 { title, text } =
                     case List.filter (\note -> note.id == id) model.notes of
                         note :: _ ->
@@ -139,7 +156,7 @@ update msg model =
 
         CloseModal ->
             let
-                newNotes =
+                amendedNotes =
                     List.map
                         (\note ->
                             if note.id == model.modalId then
@@ -150,13 +167,37 @@ update msg model =
                         )
                         model.notes
             in
-            ( { model | isModalOpen = False, notes = newNotes }, Cmd.none )
+            ( { model | isModalOpen = False, notes = amendedNotes }, Cmd.none )
 
         ModalTitle value ->
             ( { model | modalTitle = value }, Cmd.none )
 
         ModalText value ->
             ( { model | modalText = value }, Cmd.none )
+
+        OpenToolTip value ->
+            ( { model | showColorToolTip = True, colorToolTipId = value }, colorToolBar (Encode.int value) )
+
+        GotNoteCoords value ->
+            ( { model | noteCoords = value }, Cmd.none )
+
+        ChangeColor value ->
+            let
+                amendedNotes =
+                    List.map
+                        (\note ->
+                            if note.id == model.colorToolTipId then
+                                { note | color = value }
+
+                            else
+                                note
+                        )
+                        model.notes
+            in
+            ( { model | notes = amendedNotes }, Cmd.none )
+
+        CloseToolTip ->
+            ( { model | showColorToolTip = False, colorToolTipId = 0 }, Cmd.none )
 
 
 
@@ -205,8 +246,17 @@ view model =
             , viewFormContainer model
             , div []
                 [ viewNotes model
-                , viewPlaceholder
+                , if List.length model.notes > 0 then
+                    div [] []
+
+                  else
+                    viewPlaceholder
                 ]
+            , if model.showColorToolTip then
+                viewColorTooltip model
+
+              else
+                div [] []
             ]
         ]
 
@@ -304,8 +354,19 @@ viewNote note =
         , div [ class "note-text" ] [ text note.text ]
         , div [ class "toolbar-container" ]
             [ div [ class "toolbar" ]
-                [ img [ class "toolbar-color", src "https://icon.now.sh/palette" ] []
-                , img [ class "toolbar-delete", src "https://icon.now.sh/delete", onClickStopProp (DeleteNote note.id) ] []
+                [ img
+                    [ class "toolbar-color"
+                    , src "https://icon.now.sh/palette"
+                    , class ("toolbar-color" ++ String.fromInt note.id)
+                    , onMouseOver (OpenToolTip note.id)
+                    ]
+                    []
+                , img
+                    [ class "toolbar-delete"
+                    , src "https://icon.now.sh/delete"
+                    , onClickStopProp (DeleteNote note.id)
+                    ]
+                    []
                 ]
             ]
         ]
@@ -336,6 +397,23 @@ viewModal model =
         ]
 
 
+viewColorTooltip : Model -> Html Msg
+viewColorTooltip model =
+    div
+        [ id "color-tooltip"
+        , style "display" "flex"
+        , style "transform"
+            ("translate(" ++ String.fromInt model.noteCoords.x ++ "px, " ++ String.fromInt model.noteCoords.y ++ "px)")
+        , onMouseLeave CloseToolTip
+        , onClickColor ChangeColor
+        ]
+        [ div [ class "color-option", attribute "data-color" "#fff", id "white" ] []
+        , div [ class "color-option", attribute "data-color" "#d7aefb", id "purple" ] []
+        , div [ class "color-option", attribute "data-color" "#fbbc04", id "orange" ] []
+        , div [ class "color-option", attribute "data-color" "#a7ffeb", id "teal" ] []
+        ]
+
+
 
 -- HELPER FUNCTIONS
 
@@ -345,7 +423,7 @@ onClickContains nodeId =
     on "click" (containsDecoder nodeId)
 
 
-containsDecoder : String -> Decode.Decoder Msg
+containsDecoder : String -> Decoder Msg
 containsDecoder nodeId =
     Decode.at [ "target" ] (isOutsideForm nodeId)
         |> Decode.andThen
@@ -358,7 +436,7 @@ containsDecoder nodeId =
             )
 
 
-isOutsideForm : String -> Decode.Decoder Bool
+isOutsideForm : String -> Decoder Bool
 isOutsideForm nodeId =
     Decode.oneOf
         [ Decode.field "id" Decode.string
@@ -383,3 +461,13 @@ onClickStopProp message =
 alwaysStop : a -> ( a, Bool )
 alwaysStop x =
     ( x, True )
+
+
+onClickColor : (String -> Msg) -> Attribute Msg
+onClickColor message =
+    on "click" (Decode.map message colorDecoder)
+
+
+colorDecoder : Decoder String
+colorDecoder =
+    Decode.at [ "target", "dataset", "color" ] Decode.string
