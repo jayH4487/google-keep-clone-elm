@@ -5148,12 +5148,26 @@ var $elm$browser$Browser$element = _Browser_element;
 var $elm$json$Json$Decode$field = _Json_decodeField;
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $author$project$Main$init = function (noteCoords) {
+var $author$project$Main$init = function (notes) {
 	return _Utils_Tuple2(
-		{colorToolTipId: 0, formText: '', formTitle: '', isFormOpen: false, isModalOpen: false, modalId: 0, modalText: '', modalTitle: '', noteCoords: noteCoords, notes: _List_Nil, showColorToolTip: false},
+		{
+			colorToolTipId: 0,
+			formText: '',
+			formTitle: '',
+			isFormOpen: false,
+			isModalOpen: false,
+			modalId: 0,
+			modalText: '',
+			modalTitle: '',
+			noteCoords: {x: 0, y: 0},
+			notes: notes,
+			showColorToolTip: false
+		},
 		$elm$core$Platform$Cmd$none);
 };
 var $elm$json$Json$Decode$int = _Json_decodeInt;
+var $elm$json$Json$Decode$list = _Json_decodeList;
+var $elm$json$Json$Decode$string = _Json_decodeString;
 var $author$project$Main$GotNoteCoords = function (a) {
 	return {$: 'GotNoteCoords', a: a};
 };
@@ -5174,6 +5188,51 @@ var $author$project$Main$noteCoordsE = _Platform_incomingPort(
 var $author$project$Main$subscriptions = function (model) {
 	return $author$project$Main$noteCoordsE($author$project$Main$GotNoteCoords);
 };
+var $elm$json$Json$Encode$int = _Json_wrap;
+var $elm$json$Json$Encode$list = F2(
+	function (func, entries) {
+		return _Json_wrap(
+			A3(
+				$elm$core$List$foldl,
+				_Json_addEntry(func),
+				_Json_emptyArray(_Utils_Tuple0),
+				entries));
+	});
+var $elm$json$Json$Encode$object = function (pairs) {
+	return _Json_wrap(
+		A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v0, obj) {
+					var k = _v0.a;
+					var v = _v0.b;
+					return A3(_Json_addField, k, v, obj);
+				}),
+			_Json_emptyObject(_Utils_Tuple0),
+			pairs));
+};
+var $elm$json$Json$Encode$string = _Json_wrap;
+var $author$project$Main$cache = _Platform_outgoingPort(
+	'cache',
+	$elm$json$Json$Encode$list(
+		function ($) {
+			return $elm$json$Json$Encode$object(
+				_List_fromArray(
+					[
+						_Utils_Tuple2(
+						'color',
+						$elm$json$Json$Encode$string($.color)),
+						_Utils_Tuple2(
+						'id',
+						$elm$json$Json$Encode$int($.id)),
+						_Utils_Tuple2(
+						'text',
+						$elm$json$Json$Encode$string($.text)),
+						_Utils_Tuple2(
+						'title',
+						$elm$json$Json$Encode$string($.title))
+					]));
+		}));
 var $author$project$Main$newId = function (model) {
 	return (!$elm$core$List$length(model.notes)) ? 1 : (A3(
 		$elm$core$List$foldl,
@@ -5185,7 +5244,7 @@ var $author$project$Main$newId = function (model) {
 		model.notes) + 1);
 };
 var $author$project$Main$addNote = function (model) {
-	var newNotes = _Utils_ap(
+	var amendedNotes = _Utils_ap(
 		model.notes,
 		_List_fromArray(
 			[
@@ -5199,8 +5258,8 @@ var $author$project$Main$addNote = function (model) {
 	return _Utils_Tuple2(
 		_Utils_update(
 			model,
-			{formText: '', formTitle: '', isFormOpen: false, notes: newNotes}),
-		$elm$core$Platform$Cmd$none);
+			{formText: '', formTitle: '', isFormOpen: false, notes: amendedNotes}),
+		$author$project$Main$cache(amendedNotes));
 };
 var $author$project$Main$colorToolBar = _Platform_outgoingPort('colorToolBar', $elm$core$Basics$identity);
 var $elm$core$List$filter = F2(
@@ -5214,8 +5273,6 @@ var $elm$core$List$filter = F2(
 			_List_Nil,
 			list);
 	});
-var $elm$json$Json$Encode$int = _Json_wrap;
-var $elm$core$Debug$log = _Debug_log;
 var $elm$core$Basics$neq = _Utils_notEqual;
 var $author$project$Main$update = F2(
 	function (msg, model) {
@@ -5256,7 +5313,7 @@ var $author$project$Main$update = F2(
 					$elm$core$Platform$Cmd$none);
 			case 'DeleteNote':
 				var id = msg.a;
-				var newNotes = A2(
+				var amendedNotes = A2(
 					$elm$core$List$filter,
 					function (note) {
 						return !_Utils_eq(note.id, id);
@@ -5265,8 +5322,8 @@ var $author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{notes: newNotes}),
-					$elm$core$Platform$Cmd$none);
+						{notes: amendedNotes}),
+					$author$project$Main$cache(amendedNotes));
 			case 'OpenModal':
 				var id = msg.a;
 				var _v1 = function () {
@@ -5303,7 +5360,7 @@ var $author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{isModalOpen: false, notes: amendedNotes}),
-					$elm$core$Platform$Cmd$none);
+					$author$project$Main$cache(amendedNotes));
 			case 'ModalTitle':
 				var value = msg.a;
 				return _Utils_Tuple2(
@@ -5328,7 +5385,6 @@ var $author$project$Main$update = F2(
 						$elm$json$Json$Encode$int(value)));
 			case 'GotNoteCoords':
 				var value = msg.a;
-				var _v3 = A2($elm$core$Debug$log, 'coords', value);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -5348,7 +5404,7 @@ var $author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{notes: amendedNotes}),
-					$elm$core$Platform$Cmd$none);
+					$author$project$Main$cache(amendedNotes));
 			default:
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -5373,7 +5429,6 @@ var $elm$json$Json$Decode$lazy = function (thunk) {
 		$elm$json$Json$Decode$succeed(_Utils_Tuple0));
 };
 var $elm$json$Json$Decode$oneOf = _Json_oneOf;
-var $elm$json$Json$Decode$string = _Json_decodeString;
 var $author$project$Main$isOutsideForm = function (nodeId) {
 	return $elm$json$Json$Decode$oneOf(
 		_List_fromArray(
@@ -5435,7 +5490,6 @@ var $elm$virtual_dom$VirtualDom$attribute = F2(
 			_VirtualDom_noJavaScriptOrHtmlUri(value));
 	});
 var $elm$html$Html$Attributes$attribute = $elm$virtual_dom$VirtualDom$attribute;
-var $elm$json$Json$Encode$string = _Json_wrap;
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
 		return A2(
@@ -5949,15 +6003,26 @@ var $author$project$Main$view = function (model) {
 var $author$project$Main$main = $elm$browser$Browser$element(
 	{init: $author$project$Main$init, subscriptions: $author$project$Main$subscriptions, update: $author$project$Main$update, view: $author$project$Main$view});
 _Platform_export({'Main':{'init':$author$project$Main$main(
-	A2(
-		$elm$json$Json$Decode$andThen,
-		function (y) {
-			return A2(
-				$elm$json$Json$Decode$andThen,
-				function (x) {
-					return $elm$json$Json$Decode$succeed(
-						{x: x, y: y});
-				},
-				A2($elm$json$Json$Decode$field, 'x', $elm$json$Json$Decode$int));
-		},
-		A2($elm$json$Json$Decode$field, 'y', $elm$json$Json$Decode$int)))(0)}});}(this));
+	$elm$json$Json$Decode$list(
+		A2(
+			$elm$json$Json$Decode$andThen,
+			function (title) {
+				return A2(
+					$elm$json$Json$Decode$andThen,
+					function (text) {
+						return A2(
+							$elm$json$Json$Decode$andThen,
+							function (id) {
+								return A2(
+									$elm$json$Json$Decode$andThen,
+									function (color) {
+										return $elm$json$Json$Decode$succeed(
+											{color: color, id: id, text: text, title: title});
+									},
+									A2($elm$json$Json$Decode$field, 'color', $elm$json$Json$Decode$string));
+							},
+							A2($elm$json$Json$Decode$field, 'id', $elm$json$Json$Decode$int));
+					},
+					A2($elm$json$Json$Decode$field, 'text', $elm$json$Json$Decode$string));
+			},
+			A2($elm$json$Json$Decode$field, 'title', $elm$json$Json$Decode$string))))(0)}});}(this));

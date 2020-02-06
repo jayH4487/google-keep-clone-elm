@@ -14,7 +14,7 @@ import Json.Encode as Encode
 -- MAIN
 
 
-main : Program NoteCoords Model Msg
+main : Program (List Note) Model Msg
 main =
     Browser.element
         { init = init
@@ -30,6 +30,9 @@ subscriptions model =
 
 
 port colorToolBar : Encode.Value -> Cmd msg
+
+
+port cache : List Note -> Cmd msg
 
 
 port noteCoordsE : (NoteCoords -> msg) -> Sub msg
@@ -66,8 +69,8 @@ type alias Model =
     }
 
 
-init : NoteCoords -> ( Model, Cmd Msg )
-init noteCoords =
+init : List Note -> ( Model, Cmd Msg )
+init notes =
     ( { isFormOpen = False
       , isModalOpen = False
       , formTitle = ""
@@ -77,8 +80,8 @@ init noteCoords =
       , modalId = 0
       , showColorToolTip = False
       , colorToolTipId = 0
-      , noteCoords = noteCoords
-      , notes = []
+      , noteCoords = { x = 0, y = 0 }
+      , notes = notes
       }
     , Cmd.none
     )
@@ -137,10 +140,10 @@ update msg model =
 
         DeleteNote id ->
             let
-                newNotes =
+                amendedNotes =
                     List.filter (\note -> note.id /= id) model.notes
             in
-            ( { model | notes = newNotes }, Cmd.none )
+            ( { model | notes = amendedNotes }, cache amendedNotes )
 
         OpenModal id ->
             let
@@ -167,7 +170,7 @@ update msg model =
                         )
                         model.notes
             in
-            ( { model | isModalOpen = False, notes = amendedNotes }, Cmd.none )
+            ( { model | isModalOpen = False, notes = amendedNotes }, cache amendedNotes )
 
         ModalTitle value ->
             ( { model | modalTitle = value }, Cmd.none )
@@ -179,10 +182,6 @@ update msg model =
             ( { model | showColorToolTip = True, colorToolTipId = value }, colorToolBar (Encode.int value) )
 
         GotNoteCoords value ->
-            let
-                _ =
-                    Debug.log "coords" value
-            in
             ( { model | noteCoords = value }, Cmd.none )
 
         ChangeColor value ->
@@ -198,7 +197,7 @@ update msg model =
                         )
                         model.notes
             in
-            ( { model | notes = amendedNotes }, Cmd.none )
+            ( { model | notes = amendedNotes }, cache amendedNotes )
 
         CloseToolTip ->
             ( { model | showColorToolTip = False, colorToolTipId = 0 }, Cmd.none )
@@ -230,10 +229,10 @@ newId model =
 addNote : Model -> ( Model, Cmd Msg )
 addNote model =
     let
-        newNotes =
+        amendedNotes =
             model.notes ++ [ { id = newId model, title = model.formTitle, text = model.formText, color = "white" } ]
     in
-    ( { model | notes = newNotes, formTitle = "", formText = "", isFormOpen = False }, Cmd.none )
+    ( { model | notes = amendedNotes, formTitle = "", formText = "", isFormOpen = False }, cache amendedNotes )
 
 
 
