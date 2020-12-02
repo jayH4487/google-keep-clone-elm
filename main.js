@@ -5850,6 +5850,7 @@ var $author$project$Main$OpenModal = function (a) {
 var $author$project$Main$OpenToolTip = function (a) {
 	return {$: 'OpenToolTip', a: a};
 };
+var $elm$html$Html$i = _VirtualDom_node('i');
 var $elm$html$Html$Events$onMouseOver = function (msg) {
 	return A2(
 		$elm$html$Html$Events$on,
@@ -5909,11 +5910,11 @@ var $author$project$Main$viewNote = function (note) {
 						_List_fromArray(
 							[
 								A2(
-								$elm$html$Html$img,
+								$elm$html$Html$i,
 								_List_fromArray(
 									[
 										$elm$html$Html$Attributes$class('toolbar-color'),
-										$elm$html$Html$Attributes$src('https://icon.now.sh/palette'),
+										$elm$html$Html$Attributes$class('fas fa-palette'),
 										$elm$html$Html$Attributes$class(
 										'toolbar-color' + $elm$core$String$fromInt(note.id)),
 										$elm$html$Html$Events$onMouseOver(
@@ -5921,11 +5922,11 @@ var $author$project$Main$viewNote = function (note) {
 									]),
 								_List_Nil),
 								A2(
-								$elm$html$Html$img,
+								$elm$html$Html$i,
 								_List_fromArray(
 									[
 										$elm$html$Html$Attributes$class('toolbar-delete'),
-										$elm$html$Html$Attributes$src('https://icon.now.sh/delete'),
+										$elm$html$Html$Attributes$class('fas fa-trash-alt'),
 										$author$project$Main$onClickStopProp(
 										$author$project$Main$DeleteNote(note.id))
 									]),
@@ -5953,11 +5954,11 @@ var $author$project$Main$viewPlaceholder = A2(
 	_List_fromArray(
 		[
 			A2(
-			$elm$html$Html$img,
+			$elm$html$Html$i,
 			_List_fromArray(
 				[
 					$elm$html$Html$Attributes$id('placeholder-logo'),
-					$elm$html$Html$Attributes$src('https://icon.now.sh/lightbulb_outline')
+					$elm$html$Html$Attributes$class('far fa-lightbulb')
 				]),
 			_List_Nil),
 			A2(

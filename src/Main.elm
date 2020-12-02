@@ -280,7 +280,7 @@ viewHeader =
 viewPlaceholder : Html Msg
 viewPlaceholder =
     div [ id "placeholder" ]
-        [ img [ id "placeholder-logo", src "https://icon.now.sh/lightbulb_outline" ] []
+        [ i [ id "placeholder-logo", class "far fa-lightbulb" ] []
         , p [ id "placeholder-text" ] [ text "Notes you add appear here" ]
         ]
 
@@ -357,16 +357,16 @@ viewNote note =
         , div [ class "note-text" ] [ text note.text ]
         , div [ class "toolbar-container" ]
             [ div [ class "toolbar" ]
-                [ img
+                [ i
                     [ class "toolbar-color"
-                    , src "https://icon.now.sh/palette"
+                    , class "fas fa-palette"
                     , class ("toolbar-color" ++ String.fromInt note.id)
                     , onMouseOver (OpenToolTip note.id)
                     ]
                     []
-                , img
+                , i
                     [ class "toolbar-delete"
-                    , src "https://icon.now.sh/delete"
+                    , class "fas fa-trash-alt"
                     , onClickStopProp (DeleteNote note.id)
                     ]
                     []
